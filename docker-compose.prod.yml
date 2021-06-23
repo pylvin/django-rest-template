@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  backend:
+    build:
+      context: .
+    command: /venv/bin/gunicorn general.wsgi --bind 0.0.0.0:8000
+    networks:
+      - django-nginx
+    volumes:
+      - .:/code
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:12.2-alpine
+    ports:
+      - 5432:5432 # Bind host port 5432 to PostgreSQL port 5432
+    volumes:
+      - ./postgresdb:/var/lib/postgresql/data
+    env_file: .env
+    networks:
+      - django-nginx
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: ./vue-ibay-back/nginx/Dockerfile
+    ports:
+      - 80:80
+    networks:
+      - django-nginx
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/var/usr/src/static
+      - ./static:/var/usr/src/media
+    depends_on:
+      - backend
+
+networks:
+  django-nginx:
+    driver: bridge
